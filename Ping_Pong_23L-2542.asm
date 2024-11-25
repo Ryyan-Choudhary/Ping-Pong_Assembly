@@ -3,14 +3,26 @@
 [org 0x100]
 jmp mainPhase
 
+;Variables
 Player1: dw 60
 Player2: dw 3900
+Paddle_Size: dw 20
+
+Player1score: dw 0
+Player2score: dw 0
+
 Oldkbisroffset: dw 0
 Oldkbisrsegment: dw 0
-Paddle_Size: dw 20
+Oldtimisroffset: dw 0
+Oldtimisrsegment: dw 0
+
 Ball_Location: dw 3760
+BallX: dw 1 ;1=right, -1=left
+BallY: dw 1 ;1=up, -1=down
+
 intromsg: db 'Press enter to start!'
 
+;Functions,Isrs,Tsrs
 clrscrntoBlack:
 push bp
 mov bp,sp
@@ -188,6 +200,125 @@ pop bp
 ret 
 
 
+ballTimerIsr:
+push ax 
+call ballMovement
+
+mov al,0x20
+out 0x20,al
+pop ax 
+iret
+
+ballMovement:
+push bp 
+mov bp,sp 
+push es 
+push ax 
+push bx 
+push cx 
+push es 
+push si 
+push di
+
+checkleftBoundary:
+mov ax,0 ;start
+mov bx,3840  ;end
+
+cmploop1:
+cmp ax,bx
+je checkrightBoundary
+
+cmp [Ball_Location],ax
+je reverseH
+
+add ax,160
+jmp cmploop1
+
+
+checkrightBoundary:
+mov ax,158 ;start
+mov bx,3998  ;end
+
+cmploop2:
+cmp ax,bx
+je moveLocation
+
+cmp [Ball_Location],ax
+je reverseH
+
+add ax,160
+jmp cmploop2
+
+reverseH:
+mov ax,[BallX]
+imul ax,-1
+mov [BallX],ax
+
+
+moveLocation:
+mov ax,0xb800
+mov es,ax
+mov si,[Ball_Location]
+mov word [es:si],0x0720
+
+
+initiateMove:
+cmp word [BallX],1
+je c1 
+
+cmp word [BallX],-1
+je c2 
+
+c1:
+cmp word [BallY],1
+je c11
+
+cmp word [BallY],-1
+je c12 
+
+c2:
+cmp word [BallY],1
+je c21
+
+cmp word [BallY],-1
+je c22 
+
+c11:
+sub word [Ball_Location],158
+jmp printMove
+
+c12:
+add word [Ball_Location],162
+jmp printMove
+
+c21:
+add word [Ball_Location],158
+jmp printMove
+
+c22:
+sub word [Ball_Location],162
+jmp printMove
+
+printMove:
+mov si,[Ball_Location]
+mov ax,[es:si]
+mov al,0x2A
+mov [es:si],ax
+
+endballMovement:
+pop di 
+pop si 
+pop es 
+pop cx 
+pop bx 
+pop ax 
+pop es 
+pop bp 
+
+ret
+
+
+;Main game loop
 mainPhase:
 call clrscrntoBlack
 call printPaddles
@@ -218,10 +349,25 @@ call printBall
 xor ax,ax
 mov es,ax
 
+mov ax, [es:9*4]
+mov [Oldkbisroffset],ax
+mov ax, [es:9*4+2]
+mov [Oldkbisrsegment], ax
+
 cli
 mov word [es:9*4],movePaddle
 mov word [es:9*4+2],cs 
 sti 
+
+mov ax, [es:8*4]
+mov [Oldtimisroffset],ax
+mov ax, [es:8*4+2]
+mov [Oldtimisrsegment], ax
+
+cli
+mov word [es:8*4],ballTimerIsr
+mov word [es:8*4+2],cs 
+sti
 
 updatePhase:
 
