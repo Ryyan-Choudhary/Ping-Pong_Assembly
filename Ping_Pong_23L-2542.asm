@@ -10,6 +10,8 @@ Paddle_Size: dw 20
 
 Player1score: dw 0
 Player2score: dw 0
+Score1Location: dw 180
+Score2Location: dw 3820
 
 Oldkbisroffset: dw 0
 Oldkbisrsegment: dw 0
@@ -21,6 +23,8 @@ BallX: dw 1 ;1=right, -1=left
 BallY: dw 1 ;1=up, -1=down
 
 intromsg: db 'Press enter to start!'
+
+
 
 ;Functions,Isrs,Tsrs
 clrscrntoBlack:
@@ -47,6 +51,8 @@ pop es
 pop bp 
 ret
 
+
+
 printPaddles:
 push bp 
 mov bp,sp 
@@ -66,6 +72,8 @@ xor si,si
 mov cx,80
 mov si,0
 mov di,3840
+
+
 
 clearpaddleloop:
 mov word [es:si],0x0720
@@ -104,6 +112,8 @@ pop ax
 pop es 
 pop bp 
 ret
+
+
 
 movePaddle:
 push ax 
@@ -200,14 +210,27 @@ pop bp
 ret 
 
 
+
 ballTimerIsr:
 push ax 
+
 call ballMovement
+call printPaddles
+
+push word [Player1score]
+push word [Score1Location]
+call scorePrinting
+
+push word [Player2score]
+push word [Score2Location]
+call scorePrinting
 
 mov al,0x20
 out 0x20,al
 pop ax 
 iret
+
+
 
 ballMovement:
 push bp 
@@ -362,8 +385,51 @@ pop bx
 pop ax 
 pop es 
 pop bp 
-
 ret
+
+scorePrinting:
+push bp 
+mov bp,sp 
+push es 
+push ax 
+push bx 
+push cx 
+push dx 
+push di 
+
+mov ax,0xb800
+mov es,ax 
+mov ax,[bp+6]
+mov bx,10 
+mov cx,0 
+
+nd:
+mov dx,0
+div bx 
+add dl,0x30 
+push dx 
+inc cx 
+cmp ax,0
+jnz nd
+
+mov di,[bp+4]
+
+np:
+pop dx 
+mov dh,0x07
+mov [es:di],dx 
+add di,2 
+loop np 
+
+pop di 
+pop dx 
+pop cx 
+pop bx 
+pop ax 
+pop es 
+pop bp
+ret 4
+
 
 
 ;Main game loop
