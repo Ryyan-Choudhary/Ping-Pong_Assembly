@@ -220,6 +220,31 @@ push es
 push si 
 push di
 
+checkCorners:
+cmp word [Ball_Location],0
+je reverseHV
+
+cmp word [Ball_Location],158
+je reverseHV 
+
+cmp word [Ball_Location],3840
+je reverseHV 
+
+cmp word [Ball_Location],3998
+je reverseHV
+
+jmp checkleftBoundary
+
+reverseHV:
+mov ax, [BallX]
+imul ax, -1
+mov [BallX], ax
+
+mov ax, [BallY]
+imul ax, -1
+mov [BallY], ax
+jmp moveLocation
+
 checkleftBoundary:
 mov ax,0 ;start
 mov bx,3840  ;end
@@ -234,14 +259,13 @@ je reverseH
 add ax,160
 jmp cmploop1
 
-
 checkrightBoundary:
 mov ax,158 ;start
 mov bx,3998  ;end
 
 cmploop2:
 cmp ax,bx
-je moveLocation
+je checkupBoundary
 
 cmp [Ball_Location],ax
 je reverseH
@@ -255,12 +279,36 @@ imul ax,-1
 mov [BallX],ax
 
 
+checkupBoundary:
+cmp word [Ball_Location],0
+jae checkupBoundary2
+jmp checkdownBoundary
+
+checkupBoundary2:
+cmp word [Ball_Location],158
+jbe reverseV
+jmp checkdownBoundary
+
+checkdownBoundary:
+cmp word [Ball_Location],3840
+jae checkdownBoundary2
+jmp moveLocation
+
+checkdownBoundary2:
+cmp word [Ball_Location],4000
+jbe reverseV
+jmp moveLocation
+
+reverseV:
+mov ax,[BallY]
+imul ax,-1 
+mov [BallY],ax
+
 moveLocation:
 mov ax,0xb800
 mov es,ax
 mov si,[Ball_Location]
 mov word [es:si],0x0720
-
 
 initiateMove:
 cmp word [BallX],1
@@ -292,11 +340,11 @@ add word [Ball_Location],162
 jmp printMove
 
 c21:
-add word [Ball_Location],158
+sub word [Ball_Location],162
 jmp printMove
 
 c22:
-sub word [Ball_Location],162
+add word [Ball_Location],158
 jmp printMove
 
 printMove:
