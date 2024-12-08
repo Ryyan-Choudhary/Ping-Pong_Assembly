@@ -1,4 +1,4 @@
-;Project by Ryyan Choudhary(23L-2542) and Usama Zafar(23L-3056)
+;Project by Ryyan Choudhary(23L-2542) and Usama Safder(23L-3056)
 ;Ping Pong Game in Assembly
 [org 0x100]
 jmp mainPhase
